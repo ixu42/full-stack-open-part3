@@ -3,7 +3,16 @@ const morgan = require('morgan')
 const app = express()
 
 app.use(express.json())
-app.use(morgan('tiny'))
+
+// custom morgan token to log request body
+morgan.token('body', (req) => {
+  if (req.body && Object.keys(req.body).length > 0) {
+    return JSON.stringify(req.body)
+  }
+  return 'empty body'
+})
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 let persons = [
   { 
