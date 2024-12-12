@@ -86,11 +86,6 @@ app.delete('/api/persons/:id', (req, res) => {
   res.status(204).end()
 })
 
-const generateId = () => {
-  const id = Math.floor(Math.random() * 1000000)
-  return String(id)
-}
-
 app.post('/api/persons', (req, res) => {
   const body = req.body
 
@@ -106,15 +101,18 @@ app.post('/api/persons', (req, res) => {
     })
   }
 
-  const person = {
-    id: generateId(),
+  const person = new Person({
     name: body.name,
     number: body.number,
-  }
+  })
 
-  persons = persons.concat(person)
-
-  res.json(person)
+  person.save()
+    .then(savedPerson => {
+      res.status(201).json(savedPerson)
+    })
+    .catch(err => {
+      res.status(500).json({ error: err.message })
+    })
 })
 
 const PORT = process.env.PORT || 3001
