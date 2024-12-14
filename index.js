@@ -85,19 +85,19 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body
 
   if (!body.name || !body.number) {
-    return res.status(400).json({
-      error: 'name or number missing'
-    })
+    const error = new Error('name or number missing')
+    error.name = 'ValidationError'
+    return next(error)
   }
 
   if (persons.find(person => person.name === body.name)) {
-    return res.status(400).json({
-      error: 'name exists in the phonebook'
-    })
+    const error = new Error('name exists in the phonebook')
+    error.name = 'ValidationError'
+    return next(error)
   }
 
   const person = new Person({
@@ -106,16 +106,14 @@ app.post('/api/persons', (req, res) => {
   })
 
   person.save()
-    .then(savedPerson => {
-      res.status(201).json(savedPerson)
-    })
-    .catch(err => {
-      res.status(500).json({ error: err.message })
-    })
+    .then(savedPerson => res.status(201).json(savedPerson))
+    .catch(error => next(error))
 })
 
-const unknownEndpoint = (req, res) => {
-  res.status(404).send({ error: 'unknown endpoint' })
+const unknownEndpoint = (req, res, next) => {
+  const error = new Error('unknown endpoint')
+  error.status = 404
+  next(error)
 }
 
 app.put('/api/persons/:id', (req, res, next) => {
@@ -140,7 +138,15 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
+  }
+
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message });
+  }
+
+  if (error.status === 404) {
+    return response.status(404).send({ error: error.message })
+  }
 
   next(error)
 }
