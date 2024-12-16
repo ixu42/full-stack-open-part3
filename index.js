@@ -71,18 +71,21 @@ app.post('/api/persons', (req, res, next) => {
     return next(error)
   }
 
-  if (Person.findOne({ name: body.name })) {
-    const error = new Error('name exists in the phonebook')
-    error.name = 'ValidationError'
-    return next(error)
-  }
+  Person.findOne({ name: body.name })
+    .then(existingPerson => {
+      if (existingPerson) {
+        const error = new Error('name exists in the phonebook')
+        error.name = 'ValidationError'
+        throw error
+      }
 
-  const person = new Person({
-    name: body.name,
-    number: body.number,
-  })
+      const person = new Person({
+        name: body.name,
+        number: body.number,
+      })
 
-  person.save()
+      return person.save()
+    })
     .then(savedPerson => res.status(201).json(savedPerson))
     .catch(error => next(error))
 })
